@@ -2,34 +2,37 @@ using UnityEngine;
 
 public class BlockInteraction : MonoBehaviour
 {
-    public GameObject coinPrefab; 
-    public GameObject breakEffect; 
+    public GameObject breakEffect; // Assign a particle effect for breaking bricks
 
-    void Update()
+    private void OnCollisionEnter(Collision collision)
     {
-        if (Input.GetMouseButtonDown(0))
+        // Check if Mario is hitting the block from below
+        if (IsHittingFromBelow(collision))
         {
-            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-            if (Physics.Raycast(ray, out RaycastHit hit))
+            // Break brick if Mario hits it from below
+            if (collision.gameObject.CompareTag("Brick"))
             {
-                GameObject clickedObject = hit.collider.gameObject;
+                Destroy(collision.gameObject);
+                Instantiate(breakEffect, collision.transform.position, Quaternion.identity);
+                GameManager.Instance.AddPoints(100); // Add points for breaking a brick
+            }
 
-                if (clickedObject.CompareTag("Brick"))
+            // Hit question block if Mario hits it from below
+            if (collision.gameObject.CompareTag("QuestionBlock"))
+            {
+                QuestionBlockAnimator questionBlock = collision.gameObject.GetComponent<QuestionBlockAnimator>();
+                if (questionBlock != null)
                 {
-                    Instantiate(breakEffect, clickedObject.transform.position, Quaternion.identity);
-                    Destroy(clickedObject);
-                    GameManager.Instance.AddPoints(10);
-                }
-
-                if (clickedObject.CompareTag("Question"))
-                {
-                    QuestionBlockAnimator questionBlock = clickedObject.GetComponent<QuestionBlockAnimator>();
-                    if (questionBlock != null)
-                    {
-                        questionBlock.OnBlockClicked();
-                    }
+                    questionBlock.OnBlockHit();
                 }
             }
         }
+    }
+
+    private bool IsHittingFromBelow(Collision collision)
+    {
+        // Check if Mario is hitting the block from below
+        Vector3 hitDirection = (collision.transform.position - transform.position).normalized;
+        return hitDirection.y > 0.5f; // Adjust the threshold as needed
     }
 }

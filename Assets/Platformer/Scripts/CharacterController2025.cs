@@ -4,75 +4,95 @@ public class CharacterController2025 : MonoBehaviour
 {
     public float acceleration = 3f;
     public float maxSpeed = 10f;
-    public float jumpImpulse = 15f;
-    public float jumpBoostPower = 5.7f;
+    public float jumpImpulse = 20f;
+    public float jumpBoostPower = 7f;
+    public float coyoteTime = 0.1f;
+    public float jumpBufferTime = 0.1f;
+    public float gravityMultiplier = 2f;
 
-    public bool isGrounded;
+    private bool isGrounded;
+    private float coyoteTimer;
+    private float jumpBufferTimer;
+    private bool canJump = true;
     private Rigidbody rb;
+    private Animator animator;
+    private CapsuleCollider capsuleCollider;
 
-    public float cameraScrollSpeed = 5f; 
-    private Camera mainCamera; 
-
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-        mainCamera = Camera.main;
+        animator = GetComponent<Animator>();
+        capsuleCollider = GetComponent<CapsuleCollider>();
     }
 
-    // Update is called once per frame
     void Update()
     {
         float horizontalAmount = Input.GetAxis("Horizontal");
         rb.linearVelocity += Vector3.right * (horizontalAmount * Time.deltaTime * acceleration);
 
-        float horizontalSpeed = rb.linearVelocity.x;
-        horizontalSpeed = Mathf.Clamp(horizontalSpeed, -maxSpeed, maxSpeed);
+        float horizontalSpeed = Mathf.Clamp(rb.linearVelocity.x, -maxSpeed, maxSpeed);
+        rb.linearVelocity = new Vector3(horizontalSpeed, rb.linearVelocity.y, rb.linearVelocity.z);
 
-        Vector3 newVelocity = rb.linearVelocity;
-        newVelocity.x = horizontalSpeed;
-        rb.linearVelocity = newVelocity;
+        isGrounded = IsGrounded();
 
-        Collider c = GetComponent<Collider>();
-        float castDistance = c.bounds.extents.y + 0.01f;
-        Vector3 startPoint = transform.position;
+        if (isGrounded)
+        {
+            coyoteTimer = coyoteTime;
+        }
+        else
+        {
+            coyoteTimer -= Time.deltaTime;
+            rb.linearVelocity += Vector3.down * gravityMultiplier * Time.deltaTime;
+        }
 
-        Color color = (isGrounded) ? Color.green : Color.red;
-        Debug.DrawRay(transform.position, Vector3.down * castDistance, color, 0, false);
-        isGrounded = Physics.Raycast(startPoint, Vector3.down, castDistance);
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            jumpBufferTimer = jumpBufferTime;
+        }
+        else
+        {
+            jumpBufferTimer -= Time.deltaTime;
+        }
 
-        if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
+        if (jumpBufferTimer > 0 && coyoteTimer > 0 && canJump)
         {
             rb.AddForce(Vector3.up * jumpImpulse, ForceMode.VelocityChange);
+            jumpBufferTimer = 0;
+            coyoteTimer = 0;
+            canJump = false;
+            Invoke(nameof(ResetJump), 0.1f);
         }
-        else if (Input.GetKey(KeyCode.Space) && !isGrounded)
+
+        if (Input.GetKey(KeyCode.Space) && !isGrounded && rb.linearVelocity.y > 0)
         {
-            if (rb.linearVelocity.y > 0)
-            {
-                rb.AddForce(Vector3.up * jumpBoostPower, ForceMode.VelocityChange);
-            }
+            rb.AddForce(Vector3.up * jumpBoostPower, ForceMode.Acceleration);
         }
 
         if (horizontalAmount == 0f)
         {
-            Vector3 decayedVelocity = rb.linearVelocity;
-            decayedVelocity.x *= 1f - Time.deltaTime * 4f;
-            rb.linearVelocity = decayedVelocity;
-        }
-        else
-        {
-            float yawDirection = (horizontalAmount > 0f) ? 90f : -90f;
-            Quaternion rotation = Quaternion.Euler(0f, yawDirection, 0f);
-            transform.rotation = rotation;
+            rb.linearVelocity = new Vector3(rb.linearVelocity.x * (1f - Time.deltaTime * 4f), rb.linearVelocity.y,
+                rb.linearVelocity.z);
         }
 
-        if (Input.GetKey(KeyCode.RightArrow))
+        if (horizontalAmount != 0f)
         {
-            mainCamera.transform.Translate(Vector3.right * cameraScrollSpeed * Time.deltaTime);
+            float yawDirection = (horizontalAmount > 0f) ? 90f : -90f;
+            transform.rotation = Quaternion.Euler(0f, yawDirection, 0f);
         }
-        if (Input.GetKey(KeyCode.LeftArrow))
-        {
-            mainCamera.transform.Translate(Vector3.left * cameraScrollSpeed * Time.deltaTime);
-        }
+
+        animator.SetFloat("Speed", Mathf.Abs(horizontalAmount));
+        animator.SetBool("IsGrounded", isGrounded);
+    }
+
+    private bool IsGrounded()
+    {
+        float castDistance = capsuleCollider.bounds.extents.y + 0.1f;
+        Vector3 boxSize = new Vector3(capsuleCollider.radius, 0.1f, capsuleCollider.radius);
+        return Physics.BoxCast(transform.position, boxSize / 2, Vector3.down, Quaternion.identity, castDistance);
+    }
+
+    private void ResetJump()
+    {
+        canJump = true;
     }
 }

@@ -6,7 +6,7 @@ public class QuestionBlockAnimator : MonoBehaviour
     public float frameDuration = 0.2f;
     public GameObject coinPrefab;
 
-    private bool isClicked = false;
+    private bool isHit = false;
     private bool isAnimating = true;
 
     private void Start()
@@ -28,11 +28,11 @@ public class QuestionBlockAnimator : MonoBehaviour
         }
     }
 
-    public void OnBlockClicked()
+    public void OnBlockHit()
     {
-        if (!isClicked)
+        if (!isHit)
         {
-            isClicked = true;
+            isHit = true;
             isAnimating = false;
 
             if (coinPrefab != null)
@@ -44,11 +44,11 @@ public class QuestionBlockAnimator : MonoBehaviour
                     coinAnimator.Play("CoinPop");
                 }
                 Destroy(coin, 1f);
-                GameManager.Instance.AddCoins(1);
-                GameManager.Instance.AddPoints(100);
+                GameManager.Instance.AddCoins(1); // Add a coin
+                GameManager.Instance.AddPoints(100); // Add points for collecting a coin
             }
 
-            GetComponent<Collider>().enabled = false;
+            GetComponent<Collider>().enabled = false; // Disable further interactions
         }
     }
 }

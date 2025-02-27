@@ -4,14 +4,15 @@ using UnityEngine;
 
 public class LevelParser : MonoBehaviour
 {
-    public string filename;
+    public string filename; // Manually specify the file name in the Inspector
     public Transform environmentRoot;
 
-    [Header("Block Prefabs")]
     public GameObject rockPrefab;
     public GameObject brickPrefab;
     public GameObject questionBoxPrefab;
     public GameObject stonePrefab;
+    public GameObject waterPrefab;
+    public GameObject goalPrefab;
 
     void Start()
     {
@@ -31,7 +32,6 @@ public class LevelParser : MonoBehaviour
 
         Stack<string> levelRows = new Stack<string>();
 
-        
         using (StreamReader sr = new StreamReader(fileToParse))
         {
             string line;
@@ -50,27 +50,27 @@ public class LevelParser : MonoBehaviour
 
             for (int col = 0; col < letters.Length; col++)
             {
-                Vector3 pos = new Vector3(col + 0.5f, row + 0.5f, 0f);
+                Vector3 pos = new Vector3(col, row, 0f);
 
                 switch (letters[col])
                 {
-                    case 'x': 
+                    case 'x':
                         Instantiate(rockPrefab, pos, Quaternion.identity, environmentRoot);
                         break;
-                    case 'b': 
+                    case 'b':
                         Instantiate(brickPrefab, pos, Quaternion.identity, environmentRoot);
                         break;
-                    case '?': 
-                        GameObject questionBlock = Instantiate(questionBoxPrefab, pos, Quaternion.identity, environmentRoot);
-                        Renderer renderer = questionBlock.GetComponent<Renderer>();
-                        if (renderer != null)
-                        {
-                            renderer.material.mainTextureScale = new Vector3(-1f, -0.2f);
-                            renderer.material.mainTextureOffset = new Vector3(0f, 0f);
-                        }
+                    case '?':
+                        Instantiate(questionBoxPrefab, pos, Quaternion.identity, environmentRoot);
                         break;
-                    case 's': 
+                    case 's':
                         Instantiate(stonePrefab, pos, Quaternion.identity, environmentRoot);
+                        break;
+                    case 'w':
+                        Instantiate(waterPrefab, pos, Quaternion.identity, environmentRoot);
+                        break;
+                    case 'g':
+                        Instantiate(goalPrefab, pos, Quaternion.identity, environmentRoot);
                         break;
                 }
             }
@@ -86,4 +86,4 @@ public class LevelParser : MonoBehaviour
         }
         LoadLevel();
     }
-}
+} 
